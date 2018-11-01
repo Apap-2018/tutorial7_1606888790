@@ -1,17 +1,19 @@
 package com.apap.tutorial7.controller;
 
-import java.util.ArrayList;
+import java.sql.Date;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.apap.tutorial7.model.FlightModel;
 import com.apap.tutorial7.model.PilotModel;
@@ -22,69 +24,60 @@ import com.apap.tutorial7.service.PilotService;
  * FlightController
  */
 
-@Controller
+@RestController
+@RequestMapping("/flight")
 public class FlightController {
-	@Autowired
-	private FlightService flightService;
-	
-	@Autowired
-	private PilotService pilotService;
-	
-	@RequestMapping(value = "/flight/add/{licenseNumber}", method = RequestMethod.GET)
-	private String add(@PathVariable(value = "licenseNumber") String licenseNumber, Model model) {
-		FlightModel flight = new FlightModel();
-		PilotModel pilot = pilotService.getPilotDetailByLicenseNumber(licenseNumber).get();
-		flight.setPilot(pilot);
-		model.addAttribute("pilot", pilot);
-		model.addAttribute("flight", flight);
-		return "addFlight";		
-	}
 
-    @RequestMapping(value="/flight/add/{licenseNumber}", params={"add"})
-    public String addRow(@ModelAttribute PilotModel pilot, BindingResult bindingResult, Model model) {
-        if (pilot.getPilotFlight()==null)
-            pilot.setPilotFlight(new ArrayList<>());
-        pilot.getPilotFlight().add(new FlightModel());
-        model.addAttribute("pilot", pilot);
-        return "addFlight";
+    @Autowired
+    FlightService flightService;
+
+    @Autowired
+    PilotService pilotService;
+
+    @PostMapping(value = "/add")
+    public FlightModel addFlight(@RequestBody FlightModel flightModel) {
+        PilotModel pilot = pilotService.getPilotDetailByLicenseNumber(flightModel.getPilot().getLicenseNumber()).get();
+        flightModel.setPilot(pilot);
+        return flightService.addFlight(flightModel);
     }
-    @RequestMapping(value = "/flight/add/{licenseNumber}", params={"submit"}, method = RequestMethod.POST)
-    private String addFlightSubmit(@ModelAttribute PilotModel pilot) {
-        PilotModel thisPilot = pilotService.getPilotDetailByLicenseNumber(pilot.getLicenseNumber()).get();
-        for (FlightModel flight:pilot.getPilotFlight()) {
-            flight.setPilot(thisPilot);
-            flightService.addFlight(flight);
+
+    @PutMapping(value = "/update/{flightId}")
+    public String updateFlight( @PathVariable("flightId") long flightId,
+            @RequestParam("destination") Optional<String> destination,
+            @RequestParam("origin") Optional<String> origin,
+            @RequestParam("time") Optional<Date> time) {
+
+        FlightModel flight = flightService.getFlightById(flightId).get();
+        if (destination.isPresent()) {
+            flight.setDestination(destination.get());
+            System.out.println(destination.get());
         }
-        return "add";
-    }
-	
-	@RequestMapping(value = "/flight/delete", method=RequestMethod.POST)
-	private String deletePilot(@ModelAttribute PilotModel pilot, Model model) {
-		for(FlightModel flightNya : pilot.getPilotFlight()) {
-			flightService.deleteFlightById(flightNya.getId());
-		}
-		return "delete";
-	}
-	
-    @RequestMapping("/flight/update/{licenseNumber}")
-    private String update(@PathVariable(name = "licenseNumber")String licenseNumber,@ModelAttribute FlightModel flightNya , Model model){
-        PilotModel pilotNya = pilotService.getPilotDetailByLicenseNumber(licenseNumber).get();
-        flightNya.setPilot(pilotNya);
-        model.addAttribute("flight",flightNya);
-        return "updateFlight";
+        if (origin.isPresent()) {
+            flight.setOrigin(origin.get());
+            System.out.println(origin.get());
+        }
+        if (time.isPresent()) {
+            flight.setTime(time.get());
+            System.out.println(time.get());
+        }
+        flightService.addFlight(flight);
 
+        return "flight update success";
     }
-	
-	@RequestMapping(value = "/flight/update",method = RequestMethod.POST)
-	private String updateFlightSubmit(@ModelAttribute FlightModel flight) {
-		flightService.addFlight(flight);
-		return "update";
-	}
-	
-	@RequestMapping(value = "/flight/view",method = RequestMethod.GET)
-	private String viewFlight(@RequestParam("flightNumber") String flightNumber, Model model) {
-		List<FlightModel> flightsNya = flightService.getAllFlightByFlightNumber(flightNumber);
-		model.addAttribute("flightList", flightsNya);
-		return "view-flight";
-	}
+
+    @GetMapping(value = "/view/{flightNumber}")
+    public FlightModel getFlight(@PathVariable("flightNumber") String flightNumber) {
+        return flightService.getFlightDetailByFlightNumber(flightNumber).get();
+    }
+
+    @GetMapping(value = "/all")
+    public List<FlightModel> getAllFlight() {
+        return flightService.getAllFlight();
+    }
+
+    @DeleteMapping(value = "/delete/{flightId}")
+    public String deleteFlight(@PathVariable("flightId") long flightId) {
+        flightService.deleteFlightById(flightId);
+        return "flight has been deleted";
+    }
 }

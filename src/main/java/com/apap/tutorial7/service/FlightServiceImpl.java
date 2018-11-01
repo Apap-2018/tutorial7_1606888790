@@ -2,6 +2,7 @@ package com.apap.tutorial7.service;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,8 +22,8 @@ public class FlightServiceImpl implements FlightService {
 	private FlightDb flightDb;
 	
 	@Override
-	public void addFlight(FlightModel flight) {
-		flightDb.save(flight);
+	public FlightModel addFlight(FlightModel flight) {
+		return flightDb.save(flight);
 	}
 
 	@Override
@@ -32,7 +33,7 @@ public class FlightServiceImpl implements FlightService {
 	}
 
 	@Override
-	public FlightModel getFlightDetailByFlightNumber(String flightNumber) {
+	public Optional<FlightModel> getFlightDetailByFlightNumber(String flightNumber) {
 		return flightDb.findByFlightNumber(flightNumber);
 	}
 
@@ -51,6 +52,16 @@ public class FlightServiceImpl implements FlightService {
 	public void deleteFlightById(long flightId) {
 		// TODO Auto-generated method stub
 		flightDb.deleteById(flightId);
+	}
+
+	@Override
+	public Optional<FlightModel> getFlightById(long id) {
+		 return flightDb.findById(id);
+	}
+
+	@Override
+	public List<FlightModel> getAllFlight() {
+		return flightDb.findAll();
 	}
 	
 	
